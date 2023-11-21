@@ -36,6 +36,8 @@ fi
 #
 
 if [ ! -x $idf_was_installed ] || [ ! -x $commit_predefined ]; then
+	git -C $IDF_PATH reset --hard
+	git -C $IDF_PATH clean -xdf
 	git -C $IDF_PATH submodule update --init --recursive
 	$IDF_PATH/install.sh
 	export IDF_COMMIT=$(git -C "$IDF_PATH" rev-parse --short HEAD)
