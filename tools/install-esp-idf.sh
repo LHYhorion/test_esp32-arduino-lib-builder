@@ -7,6 +7,8 @@ if ! [ -x "$(command -v $SED)" ]; then
   	exit 1
 fi
 
+IDF_COMMIT="6b1f40b9bf"
+
 #
 # CLONE ESP-IDF
 #
@@ -15,6 +17,10 @@ if [ ! -d "$IDF_PATH" ]; then
 	echo "ESP-IDF is not installed! Installing local copy"
 	git clone $IDF_REPO_URL -b $IDF_BRANCH
 	idf_was_installed="1"
+else
+	echo "ESP-IDF is already installed"
+	git -C "$IDF_PATH" clean -xdf
+	git -C "$IDF_PATH" reset --hard
 fi
 
 if [ "$IDF_TAG" ]; then
