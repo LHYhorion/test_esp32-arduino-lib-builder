@@ -14,6 +14,7 @@ TARGET="all"
 BUILD_TYPE="all"
 SKIP_ENV=0
 COPY_OUT=0
+ARCHIVE_OUT=0
 if [ -z $DEPLOY_OUT ]; then
     DEPLOY_OUT=0
 fi
@@ -24,6 +25,7 @@ function print_help() {
     echo "       -A     Set which branch of arduino-esp32 to be used for compilation"
     echo "       -I     Set which branch of ESP-IDF to be used for compilation"
     echo "       -i     Set which commit of ESP-IDF to be used for compilation"
+    echo "       -e     Archive the build to dist"
     echo "       -d     Deploy the build to github arduino-esp32"
     echo "       -c     Set the arduino-esp32 folder to copy the result to. ex. '$HOME/Arduino/hardware/espressif/esp32'"
     echo "       -t     Set the build target(chip). ex. 'esp32s3'"
@@ -32,13 +34,16 @@ function print_help() {
     exit 1
 }
 
-while getopts ":A:I:i:c:t:b:sd" opt; do
+while getopts ":A:I:e:i:c:t:b:sd" opt; do
     case ${opt} in
         s )
             SKIP_ENV=1
             ;;
         d )
             DEPLOY_OUT=1
+            ;;
+        e )
+            ARCHIVE_OUT=1
             ;;
         c )
             export ESP32_ARDUINO="$OPTARG"
@@ -58,10 +63,10 @@ while getopts ":A:I:i:c:t:b:sd" opt; do
             ;;
         b )
             b=$OPTARG
-            if [ "$b" != "build" ] && 
-               [ "$b" != "menuconfig" ] && 
-               [ "$b" != "idf_libs" ] && 
-               [ "$b" != "copy_bootloader" ] && 
+            if [ "$b" != "build" ] &&
+               [ "$b" != "menuconfig" ] &&
+               [ "$b" != "idf_libs" ] &&
+               [ "$b" != "copy_bootloader" ] &&
                [ "$b" != "mem_variant" ]; then
                 print_help
             fi
@@ -80,6 +85,8 @@ done
 shift $((OPTIND -1))
 CONFIGS=$@
 
+source ./tools/config.sh
+
 if [ $SKIP_ENV -eq 0 ]; then
     echo "* Installing/Updating ESP-IDF and all components..."
     # update components from git
@@ -89,8 +96,6 @@ if [ $SKIP_ENV -eq 0 ]; then
     # install esp-idf
     source ./tools/install-esp-idf.sh
     if [ $? -ne 0 ]; then exit 1; fi
-else
-    source ./tools/config.sh
 fi
 
 if [ "$BUILD_TYPE" != "all" ]; then
@@ -99,7 +104,7 @@ if [ "$BUILD_TYPE" != "all" ]; then
         print_help
     fi
     configs="configs/defconfig.common;configs/defconfig.$TARGET"
-    
+
     # Target Features Configs
     for target_json in `jq -c '.targets[]' configs/builds.json`; do
         target=$(echo "$target_json" | jq -c '.target' | tr -d '"')
@@ -196,16 +201,7 @@ if [ "$BUILD_TYPE" = "all" ]; then
 fi
 
 # archive the build
-if [ "$BUILD_TYPE" = "all" ]; then
-    ./tools/archive-build.sh
+if [ $ARCHIVE_OUT -eq 1 ]; then
+    ./tools/archive-build.sh "$TARGET"
     if [ $? -ne 0 ]; then exit 1; fi
-fi
-
-# copy everything to arduino-esp32 installation
-if [ $COPY_OUT -eq 1 ] && [ -d "$ESP32_ARDUINO" ]; then
-    ./tools/copy-to-arduino.sh
-fi
-
-if [ $DEPLOY_OUT -eq 1 ]; then
-    ./tools/push-to-arduino.sh
 fi

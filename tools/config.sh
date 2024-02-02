@@ -1,12 +1,10 @@
 #!/bin/bash
 
+export IDF_BRANCH="release/v4.4"
+export IDF_COMMIT="ac5d805d0e"
 
 if [ -z $IDF_PATH ]; then
 	export IDF_PATH="$PWD/esp-idf"
-fi
-
-if [ -z $IDF_BRANCH ]; then
-	IDF_BRANCH="release/v4.4"
 fi
 
 if [ -z $AR_PR_TARGET_BRANCH ]; then
